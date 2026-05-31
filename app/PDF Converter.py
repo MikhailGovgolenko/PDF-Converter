@@ -128,6 +128,10 @@ def resize_pdf_gs(input_path, output_path, w_ratio, h_ratio, box):
     base_width = 1440
     base_height = int(base_width * h_ratio / w_ratio)
 
+    # Преобразуем пути к абсолютным и нормализуем слэши под Windows
+    input_path = os.path.abspath(input_path)
+    output_path = os.path.abspath(output_path)
+
     cmd = [
         gs_path, "-sDEVICE=pdfwrite", "-dNOPAUSE", "-dBATCH", "-dFIXEDMEDIA",
         "-dAutoRotatePages=/None",
@@ -139,13 +143,25 @@ def resize_pdf_gs(input_path, output_path, w_ratio, h_ratio, box):
     ]
 
     try:
-        subprocess.run(cmd, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        # shell=True и правильная кодировка помогают Windows передать кириллицу в Ghostscript
+        result = subprocess.run(
+            cmd, 
+            check=True, 
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding='utf-8'
+        )
         status = "✔ done"
+    except subprocess.CalledProcessError as e:
+        # Если упало, выводим реальную ошибку из логов самого Ghostscript
+        gs_error = e.stderr if e.stderr else e.output
+        status = f"❌ Ghostscript error:\n{gs_error}"
     except Exception as e:
         status = f"❌ error: {e}"
 
     log_block(box, f"📐 RESIZE: {file_name}", "Running Ghostscript...", status)
-
 
 # =========================
 # GUI
