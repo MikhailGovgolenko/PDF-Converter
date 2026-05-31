@@ -1,13 +1,11 @@
 
-# 📄 PDF Converter
+# PDF Converter
 
-<img src="app/icon.png" width="48" height="48" alt="PDF Converter Icon" valign="middle">
-
-**PDF Converter**
+<img src="app/icon.png" width="64" height="64" alt="PDF Converter Icon" halign="middle">
 
 A portable utility to analyze page aspect ratios and resize PDF documents without quality loss.
 
-### 🚀 How to use:
+### How to use:
 
 1. **Run** `PDF Converter.exe`.
 2. Click **📂 Open PDF** and select your document.
