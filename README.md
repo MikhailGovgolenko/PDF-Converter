@@ -1,7 +1,7 @@
 
 # 📄 PDF Converter
 
-`<img src="app/icon.png" width="48" height="48" alt="PDF Converter Icon" valign="middle">`
+<img src="app/icon.png" width="48" height="48" alt="PDF Converter Icon" valign="middle">
 
 **PDF Converter**
 
