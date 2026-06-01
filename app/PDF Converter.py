@@ -1,12 +1,10 @@
 import tkinter as tk
 from tkinter import filedialog, scrolledtext
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 from collections import Counter
-import subprocess
 import os
 import sys
 import ctypes
-
 
 # =========================
 # RESOURCE PATH + ДИАГНОСТИКА
@@ -23,26 +21,6 @@ def resource_path(relative_path):
     full_path = os.path.join(base_path, relative_path)
     print(f"[DEBUG] Resource requested: {relative_path} → {full_path}")  # для отладки
     return full_path
-
-
-# =========================
-# GHOSTSCRIPT (ВНУТРИ EXE)
-# =========================
-def get_gs_path():
-    gs_exe = resource_path("gswin64c.exe")
-    if os.path.exists(gs_exe):
-        return gs_exe
-
-    from shutil import which
-    gs = which("gswin64c")
-    if gs:
-        return gs
-
-    default = r"C:\Program Files\gs\gs10.06.0\bin\gswin64c.exe"
-    if os.path.exists(default):
-        return default
-
-    raise FileNotFoundError("Ghostscript не найден")
 
 
 # =========================
@@ -119,61 +97,78 @@ def analyze_pdf(path, box):
     log_block(box, f"📄 ANALYZE: {file_name}", content, "✔ done")
 
 
-def resize_pdf_gs(input_path, output_path, w_ratio, h_ratio, box):
-    gs_path = get_gs_path()
+def resize_pdf_pure_python(input_path, output_path, w_ratio, h_ratio, box):
+    """
+    Изменение размера страниц с добавлением полей (без искажения контента).
+    Приводит все боксы страницы (MediaBox, CropBox) к единому квадратному размерu.
+    """
     file_name = os.path.basename(input_path)
-
-    base_width = 1440
-    base_height = int(base_width * h_ratio / w_ratio)
-
-    input_path = os.path.abspath(input_path)
-    output_path = os.path.abspath(output_path)
-
-    # Инструкция на языке PostScript для принудительного изменения геометрии
-    # и игнорирования оригинальных пропорций страниц
-    ps_force_geometry = (
-        f'<< /PageSize [{base_width} {base_height}] '
-        f'/Policies << /PageSize 3 >> '
-        f'>> setpagedevice'
-    )
-
-    # Измененный и строго выверенный порядок аргументов для Ghostscript
-    cmd = [
-            gs_path, 
-            "-sDEVICE=pdfwrite", 
-            "-dNOPAUSE", 
-            "-dBATCH", 
-            "-dFIXEDMEDIA",
-            "-dAutoRotatePages=/None",      # Сохраняем оригинальную ориентацию
-            f"-dDEVICEWIDTHPOINTS={base_width}",
-            f"-dDEVICEHEIGHTPOINTS={base_height}",
-            "-dPDFFitPage",                 # Включаем вписывание контента
-            "-dUseCropBox=true",            # КРИТИЧЕСКИ ВАЖНО: масштабируем по видимой рамке, а не скрытой
-            "-dUseTrimBox=true",
-            f"-sOutputFile={output_path}", 
-            "-c", ps_force_geometry,        # Накладываем финальный жесткий размер
-            "-f", input_path
-        ]
-
+    
     try:
-        result = subprocess.run(
-            cmd, 
-            check=True, 
-            creationflags=subprocess.CREATE_NO_WINDOW,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding='utf-8'
-        )
+        reader = PdfReader(input_path)
+        writer = PdfWriter()
+
+        # Базовая целевая ширина холста в пунктах PDF (595.0 соответствуют ширине А4)
+        target_width = 595.0
+        target_height = target_width * h_ratio / w_ratio
+
+        for original_page in reader.pages:
+            current_width = float(original_page.mediabox.width)
+            current_height = float(original_page.mediabox.height)
+
+            # Вычисляем коэффициенты масштабирования для обеих сторон
+            fit_x = target_width / current_width
+            fit_y = target_height / current_height
+
+            # Берем минимальный коэффициент, чтобы вписать контент без деформаций
+            scale = min(fit_x, fit_y)
+
+            # Определяем размеры контента после пропорционального изменения
+            new_content_w = current_width * scale
+            new_content_h = current_height * scale
+
+            # Вычисляем отступы (поля) для центрирования контента на новом холсте
+            offset_x = (target_width - new_content_w) / 2
+            offset_y = (target_height - new_content_h) / 2
+
+            # Добавляем страницу во writer
+            page = writer.add_page(original_page)
+
+            # Масштабируем контент пропорционально
+            page.scale(scale, scale)
+            
+            # Сдвигаем контент в центр и жестко задаем границы финального холста
+            page.mediabox.left = -offset_x
+            page.mediabox.bottom = -offset_y
+            page.mediabox.right = target_width - offset_x
+            page.mediabox.top = target_height - offset_y
+
+            # КРИТИЧЕСКИ ВАЖНО: Синхронизируем все остальные рамки PDF с новым размером.
+            # Если этого не сделать, просмотрщики будут принудительно обрезать квадрат до прямоугольника.
+            page.cropbox.left = page.mediabox.left
+            page.cropbox.bottom = page.mediabox.bottom
+            page.cropbox.right = page.mediabox.right
+            page.cropbox.top = page.mediabox.top
+            
+            # На всякий случай очищаем типографские рамки, если они были в исходнике
+            if hasattr(page, 'bleedbox'): page.bleedbox = page.mediabox
+            if hasattr(page, 'trimbox'):  page.trimbox = page.mediabox
+            if hasattr(page, 'artbox'):   page.artbox = page.mediabox
+
+            # Внутреннее сжатие потоков страницы на лету
+            page.compress_content_streams()
+
+        # Сохраняем результат
+        with open(output_path, "wb") as f:
+            writer.write(f)
+            
         status = "✔ done"
-    except subprocess.CalledProcessError as e:
-        gs_error = e.stderr if e.stderr else e.output
-        status = f"❌ Ghostscript error:\n{gs_error}"
+        content = f"All pages fitted centered to: {target_width:.1f} x {target_height:.1f} points."
     except Exception as e:
-        status = f"❌ error: {e}"
+        status = f"❌ error"
+        content = str(e)
 
-    log_block(box, f"📐 RESIZE: {file_name}", "Running Ghostscript...", status)
-
+    log_block(box, f"📐 RESIZE: {file_name}", content, status)
 
 # =========================
 # GUI
@@ -188,7 +183,7 @@ class App:
 
         header = tk.Frame(root, bg="#f5f5f5")
         header.pack(pady=20)
-        tk.Label(header, text="📄 PDF Converter", font=font_big, bg="#f5f5f5", fg="#111").pack()
+        tk.Label(header, text="📄 PDF Converter (No-Bloat)", font=font_big, bg="#f5f5f5", fg="#111").pack()
 
         tk.Button(root, text="📂 Open PDF", command=self.open_pdf,
                   width=26, height=2, font=font).pack(pady=15)
@@ -235,9 +230,10 @@ class App:
             wr = int(self.w_entry.get())
             hr = int(self.h_entry.get())
         except:
-            log_block(self.out, "ERROR", "Invalid ratio", "failed")
+            log_block(self.out, "ERROR", "Invalid ratio. Please enter integers.", "failed")
             return
-        resize_pdf_gs(self.input_path, out_path, wr, hr, self.out)
+        
+        resize_pdf_pure_python(self.input_path, out_path, wr, hr, self.out)
 
 
 # =========================

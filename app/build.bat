@@ -11,8 +11,6 @@ set "APP=PDF Converter.py"
 set "NAME=PDF Converter"
 set "ICON=icon.ico"
 set "PNG=icon.png"
-set "GS=gswin64c.exe"
-set "GS_DLL=gsdll64.dll"
 
 :: ================= ПРОВЕРКА ФАЙЛОВ ПЕРЕД СБОРКОЙ =================
 echo Checking required files...
@@ -29,17 +27,8 @@ if not exist "%PNG%" (
     echo ❌ ERROR: Icon "%PNG%" not found!
     goto :failed
 )
-if not exist "%GS%" (
-    echo ❌ ERROR: Ghostscript "%GS%" not found!
-    goto :failed
-)
-if not exist "%GS_DLL%" (
-    echo ❌ ERROR: Ghostscript DLL "%GS_DLL%" not found!
-    echo          Please copy gsdll64.dll from Ghostscript bin folder into "app".
-    goto :failed
-)
 
-echo ✅ All files found. Ready to build.
+echo ✅ All files found. Ready to build (No Ghostscript required).
 echo.
 
 :: ================= ОЧИСТКА СТАРЫХ СБОРОК =================
@@ -54,6 +43,7 @@ echo Please wait...
 echo.
 
 :: ================= СБОРКА PYINSTALLER =================
+:: Убраны строки подключения тяжелых бинарников Ghostscript
 py -m PyInstaller ^
   --onefile ^
   --windowed ^
@@ -62,19 +52,17 @@ py -m PyInstaller ^
   --icon "%ICON%" ^
   --add-data "%ICON%;." ^
   --add-data "%PNG%;." ^
-  --add-data "%GS%;." ^
-  --add-data "%GS_DLL%;." ^
   --name "%NAME%" ^
   "%APP%"
 
 :: ================= ПРОВЕРКА РЕЗУЛЬТАТА =================
 echo.
 echo ====================================
-echo            BUILD FINISHED!
+echo             BUILD FINISHED!
 echo ====================================
 if exist "dist\%NAME%.exe" (
     echo ✅ EXE created successfully:
-    echo     app\dist\%NAME%.exe
+    echo     dist\%NAME%.exe
 ) else (
     echo ❌ Build failed!
 )
