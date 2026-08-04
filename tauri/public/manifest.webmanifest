@@ -1,0 +1,19 @@
+{
+  "name": "PDF Resizer",
+  "short_name": "PDF Resizer",
+  "description": "Analyze page aspect ratios and resize PDF documents without quality loss.",
+  "start_url": "/PDF-Resizer/",
+  "scope": "/PDF-Resizer/",
+  "display": "standalone",
+  "background_color": "#f3f3f3",
+  "theme_color": "#0078d4",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/PDF-Resizer/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

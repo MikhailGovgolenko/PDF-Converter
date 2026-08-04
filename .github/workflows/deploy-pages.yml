@@ -20,17 +20,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: tauri/package-lock.json
+          cache: pnpm
+          cache-dependency-path: tauri/pnpm-lock.yaml
 
       - name: Install and build
         working-directory: tauri
         run: |
-          npm ci
-          npm run build:pages
+          pnpm install
+          pnpm run build:pages
 
       - uses: actions/upload-pages-artifact@v4
         with:

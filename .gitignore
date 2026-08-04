@@ -16,3 +16,6 @@ app-python/xref-*.html
 # === Мусор бэкенда Rust (Tauri) ===
 **/src-tauri/target/
 **/src-tauri/.cargo/
+
+# pnpm
+.npmrc

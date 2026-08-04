@@ -36,9 +36,22 @@
   <link rel="icon" href="favicon-light.png" media="(prefers-color-scheme: light)" />
   <link rel="icon" href="favicon-dark.png" media="(prefers-color-scheme: dark)" />
 
+  <link rel="manifest" href="manifest.webmanifest" />
+
   <script type="module" src="/src/main.ts"></script>
 </head>
 <body>
   <div id="app"></div>
+
+  <!-- Register Service Worker for PWA support (только на GitHub Pages) -->
+  <script>
+    if ("serviceWorker" in navigator && location.hostname === "mikhailgovgolenko.github.io") {
+      navigator.serviceWorker
+        .register("/PDF-Resizer/sw.js?v=1", {
+          scope: "/PDF-Resizer/",
+        })
+        .catch((err) => console.warn("SW registration failed:", err));
+    }
+  </script>
 </body>
 </html>
