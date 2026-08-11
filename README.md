@@ -1,6 +1,6 @@
 <h1 align="center">PDF Resizer</h1>
 
-<p align="center">Web version: https://mikhailgovgolenko.github.io/PDF-Resizer/</p>
+<p align="center">Web version: https://pdf-resizer.govgolenko.ru/</p>
 
 A utility to analyze page aspect ratios and resize PDF documents without quality loss.
 

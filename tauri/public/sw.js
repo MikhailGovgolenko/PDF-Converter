@@ -1,13 +1,13 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `pdf-resizer-${CACHE_VERSION}`;
-const BASE_PATH = '/PDF-Resizer/';
+const BASE_PATH = '/';
 
 // В массиве оставляем только те файлы, которые РЕАЛЬНО лежат в твоей папке Tauri/public
 const FILES_TO_CACHE = [
-  '/PDF-Resizer/',
-  '/PDF-Resizer/index.html',
-  '/PDF-Resizer/manifest.webmanifest',
-  '/PDF-Resizer/icon.png',
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/icon.png',
 ];
 
 // Install - кеширует необходимые файлы
@@ -60,8 +60,8 @@ self.addEventListener('fetch', (event) => {
           // Обновляем закешированную страницу свежим ответом
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put('/PDF-Resizer/', responseToCache);
-            cache.put('/PDF-Resizer/index.html', responseToCache);
+            cache.put('/', responseToCache);
+            cache.put('/index.html', responseToCache);
           });
 
           return response;
@@ -71,7 +71,7 @@ self.addEventListener('fetch', (event) => {
             if (response) {
               return response;
             }
-            return caches.match('/PDF-Resizer/');
+            return caches.match('/');
           })
         )
     );

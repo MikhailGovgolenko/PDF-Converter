@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:pages": "tsc && vite build --base /PDF-Resizer/",
+    "build:pages": "tsc && vite build",
     "icons:apple-touch": "node scripts/pad-apple-touch-icon.mjs",
     "preview": "vite preview",
     "tauri": "tauri"

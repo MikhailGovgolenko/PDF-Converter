@@ -1,13 +1,10 @@
 import { defineConfig } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;
-const isTauriBuild = Boolean(process.env.TAURI_ENV_PLATFORM);
-const isGitHubPages = process.env.GITHUB_ACTIONS === "true";
-const base = isTauriBuild ? "/" : isGitHubPages ? "/PDF-Resizer/" : "/";
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  base,
+  base: "/",
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
